@@ -1,0 +1,54 @@
+classDiagram
+    class User {
+        +Long userId
+        +String username
+        +String password
+        +Role role
+        +String email
+    }
+    class Product {
+        +Long productId
+        +String name
+        +String description
+        +double price
+        +int stockQuantity
+        +String category
+    }
+    class Cart {
+        +Long cartId
+        +Long userId
+        +Long productId
+        +int quantity
+    }
+    class Order {
+        +Long orderId
+        +Long userId
+        +double totalAmount
+        +LocalDateTime orderDate
+        +String status
+        +String shippingAddress
+        +String deliveryNote
+    }
+    class OrderItem {
+        +Long orderItemId
+        +Long orderId
+        +Long productId
+        +String productName
+        +double unitPrice
+        +int quantity
+        +double totalPrice
+    }
+    class Payment {
+        +Long paymentId
+        +Long orderId
+        +double amount
+        +String paymentStatus
+        +LocalDateTime paymentDate
+    }
+
+    User "1" -- "0..*" Cart : owns
+    User "1" -- "0..*" Order : places
+    Product "1" -- "0..*" Cart : referenced by
+    Order "1" -- "0..*" OrderItem : contains
+    Product "1" -- "0..*" OrderItem : referenced by
+    Order "1" -- "0..1" Payment : paid by

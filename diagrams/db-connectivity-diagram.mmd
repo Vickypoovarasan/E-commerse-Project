@@ -1,0 +1,38 @@
+flowchart TB
+    UI[Frontend Pages]
+    PC[ProductController]
+    CC[CartController]
+    OC[OrderController]
+    PAYC[PaymentController]
+    INV[InvoiceController]
+    PS[ProductService]
+    CS[CartService]
+    OS[OrderService]
+    PAYS[PaymentService]
+    PR[ProductRepository]
+    CR[CartRepository]
+    OR[OrderRepository]
+    PYR[PaymentRepository]
+    OIR[OrderItemRepository]
+    DB[(MySQL Database)]
+
+    UI --> PC
+    UI --> CC
+    UI --> OC
+    UI --> PAYC
+    UI --> INV
+    PC --> PS
+    CC --> CS
+    OC --> OS
+    PAYC --> PAYS
+    INV --> OS
+    PS --> PR
+    CS --> CR
+    OS --> OR
+    OS --> OIR
+    PAYS --> PYR
+    PR --> DB
+    CR --> DB
+    OR --> DB
+    PYR --> DB
+    OIR --> DB

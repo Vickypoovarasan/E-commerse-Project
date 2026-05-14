@@ -1,0 +1,49 @@
+flowchart LR
+    subgraph User/Browser
+      U[User / Admin]
+    end
+    subgraph Frontend
+      UI[Static HTML Pages]
+    end
+    subgraph Backend
+      PC[ProductController]
+      CC[CartController]
+      OC[OrderController]
+      PAYC[PaymentController]
+      INV[InvoiceController]
+      PS[ProductService]
+      CS[CartService]
+      OS[OrderService]
+      PAYS[PaymentService]
+      PR[ProductRepository]
+      CR[CartRepository]
+      OR[OrderRepository]
+      PYR[PaymentRepository]
+      OIR[OrderItemRepository]
+    end
+    subgraph Database
+      DB[(MySQL Database)]
+    end
+
+    U -->|browse products| UI
+    UI -->|GET /api/products| PC
+    PC --> PS
+    PS --> PR
+    UI -->|add to cart| CC
+    CC --> CS
+    CS --> CR
+    UI -->|checkout| OC
+    OC --> OS
+    OS --> OR
+    OC --> OIR
+    UI -->|pay order| PAYC
+    PAYC --> PAYS
+    PAYS --> PYR
+    UI -->|download invoice| INV
+    INV --> OR
+    INV --> OIR
+    PR --> DB
+    CR --> DB
+    OR --> DB
+    PYR --> DB
+    OIR --> DB

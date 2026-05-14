@@ -1,0 +1,54 @@
+erDiagram
+    USER {
+        long userId PK
+        string username
+        string password
+        string role
+        string email
+    }
+    PRODUCT {
+        long productId PK
+        string name
+        string description
+        double price
+        int stockQuantity
+        string category
+    }
+    CART {
+        long cartId PK
+        long userId FK
+        long productId FK
+        int quantity
+    }
+    ORDERS {
+        long orderId PK
+        long userId FK
+        double totalAmount
+        datetime orderDate
+        string status
+        string shippingAddress
+        string deliveryNote
+    }
+    ORDER_ITEM {
+        long orderItemId PK
+        long orderId FK
+        long productId FK
+        string productName
+        double unitPrice
+        int quantity
+        double totalPrice
+    }
+    PAYMENT {
+        long paymentId PK
+        long orderId FK
+        double amount
+        string paymentStatus
+        datetime paymentDate
+    }
+
+    USER ||--o{ CART : "has"
+    USER ||--o{ ORDERS : "places"
+    PRODUCT ||--o{ CART : "referenced by"
+    ORDERS ||--o{ ORDER_ITEM : "contains"
+    PRODUCT ||--o{ ORDER_ITEM : "included in"
+    ORDERS ||--|| PAYMENT : "paid by"

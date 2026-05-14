@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
+  <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-brands/css/uicons-brands.css'>
+
+  <link rel="stylesheet" href="theme.css">
+</head>
+
+<body>
+
+<nav class="navbar navbar-dark">
+  <div class="container d-flex justify-content-between">
+    <span class="navbar-brand">Cart</span>
+    <button onclick="goHome()" class="btn btn-warning">Home</button>
+  </div>
+</nav>
+
+<div class="container mt-4">
+
+  <div id="cartList"></div>
+
+  <div class="total-box">
+    <h4>Total Items: <span id="totalItems">0</span></h4>
+    <h4>Total Amount: ₹<span id="totalAmount">0</span></h4>
+
+    <button onclick="goPayment()" class="btn btn-checkout w-100 mt-2">
+      Checkout Now
+    </button>
+  </div>
+
+</div>
+
+<script>
+
+  let userId = localStorage.getItem("userId");
+
+  // ✅ GET CART
+  fetch(`http://localhost:9090/api/cart/${userId}`)
+  .then(res => res.json())
+  .then(data => {
+
+      let container = document.getElementById("cartList");
+      container.innerHTML = "";
+
+      let totalItems = 0;
+      let totalAmount = 0;
+
+      data.forEach(c => {
+
+          let itemTotal = c.price * c.quantity;
+
+          totalItems += c.quantity;
+          totalAmount += itemTotal;
+
+          let div = document.createElement("div");
+
+          div.innerHTML = `
+              <div class="card">
+                  <h4>${c.productName}</h4>
+                  <p>Price: ₹${c.price}</p>
+                  <p>Quantity: ${c.quantity}</p>
+                  <p><b>Total: ₹${itemTotal}</b></p>
+
+                  <button onclick="removeItem(${c.cartId})" class="btn btn-danger">Remove</button>
+              </div>
+          `;
+
+          container.appendChild(div);
+      });
+
+      document.getElementById("totalItems").innerText = totalItems;
+      document.getElementById("totalAmount").innerText = totalAmount;
+  });
+
+  // ✅ DELETE ITEM
+  function removeItem(cartId){
+      fetch(`http://localhost:9090/api/cart/${cartId}`, {
+          method: "DELETE"
+      })
+      .then(() => location.reload());
+  }
+
+  // ✅ CHECKOUT
+  function goPayment(){
+      const totalAmount = parseFloat(document.getElementById("totalAmount").innerText || 0);
+      if (totalAmount <= 0) {
+          alert("Your cart is empty. Add products before checkout.");
+          return;
+      }
+      window.location.href = "payment.html";
+  }
+
+  function goHome(){
+      window.location.href = "index.html";
+  }
+
+</script>
+
+</body>
+</html>
+
