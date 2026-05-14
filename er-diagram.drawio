@@ -1,0 +1,34 @@
+﻿<mxfile host="app.diagrams.net" version="20.0.3" type="device">
+  <diagram id="er-fixed-v2" name="ER Diagram">
+    <mxGraphModel dx="1049" dy="735" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="20" value="USER&#10;userId PK&#10;username&#10;password&#10;role&#10;email" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="180" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="21" value="PRODUCT&#10;productId PK&#10;name&#10;description&#10;price&#10;stockQuantity&#10;category" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="200" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="22" value="CART&#10;cartId PK&#10;userId FK&#10;productId FK&#10;quantity" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="200" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="23" value="ORDERS&#10;orderId PK&#10;userId FK&#10;totalAmount&#10;orderDate&#10;status&#10;shippingAddress&#10;deliveryNote" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="260" width="220" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="24" value="ORDER_ITEM&#10;orderItemId PK&#10;orderId FK&#10;productId FK&#10;productName&#10;unitPrice&#10;quantity&#10;totalPrice" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="580" y="260" width="220" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="25" value="PAYMENT&#10;paymentId PK&#10;orderId FK&#10;amount&#10;paymentStatus&#10;paymentDate" style="shape=table;startSize=30;container=1;collapsible=0;childLayout=tableLayout;fixedRows=1;rowLines=1;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="500" width="220" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="26" value="has" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="20" target="22" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="27" value="places" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="20" target="23" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="28" value="referenced by" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="21" target="22" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="29" value="contains" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="23" target="24" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="30" value="included in" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="21" target="24" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="31" value="paid by" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;" edge="1" source="23" target="25" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
