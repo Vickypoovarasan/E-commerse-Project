@@ -42,6 +42,9 @@ Response:
 }
 ```
 
+> Password must be at least 8 characters and include uppercase, lowercase, number, and special symbol.
+> Use a strong password like `Sam@2004`.
+
 ### 2. Login User or Admin
 Endpoint: `POST /api/users/login`
 
@@ -541,11 +544,67 @@ POST {{base_url}}/api/users/login?username=john@example.com&password=wrongpass
 Response:
 ```json
 {
-  "timestamp": "...",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "email and password mismatch",
-  "path": "/api/users/login"
+  "message": "email and password mismatch"
+}
+```
+
+### Weak password on registration
+Request:
+```http
+POST {{base_url}}/api/users/register
+Content-Type: application/json
+
+{
+  "username": "sam",
+  "password": "sam@2004",
+  "email": "sam@gmail.com",
+  "role": "CUSTOMER"
+}
+```
+Response:
+```json
+{
+  "message": "Password must contain min 8 characters, uppercase, lowercase, number, and special symbol"
+}
+```
+
+### Duplicate username or email on registration
+Request:
+```http
+POST {{base_url}}/api/users/register
+Content-Type: application/json
+
+{
+  "username": "john_doe",
+  "password": "John@2004",
+  "email": "john@example.com",
+  "role": "CUSTOMER"
+}
+```
+Response:
+```json
+{
+  "message": "username already exited, create new one"
+}
+```
+
+### Duplicate email on registration
+Request:
+```http
+POST {{base_url}}/api/users/register
+Content-Type: application/json
+
+{
+  "username": "johnny_doe",
+  "password": "John@2004",
+  "email": "john@example.com",
+  "role": "CUSTOMER"
+}
+```
+Response:
+```json
+{
+  "message": "email already exited, create new one"
 }
 ```
 

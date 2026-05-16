@@ -1,6 +1,7 @@
 package com.example.ecommerce.service;
 
 import com.example.ecommerce.exception.BadRequestException;
+import com.example.ecommerce.exception.ResourceNotFoundException;
 import com.example.ecommerce.model.Cart;
 import com.example.ecommerce.model.Order;
 import com.example.ecommerce.model.OrderItem;
@@ -44,7 +45,12 @@ public class OrderService {
 
         for (Cart item : cartItems) {
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+            // Check if sufficient stock available
+            if (product.getStockQuantity() < item.getQuantity()) {
+                throw new BadRequestException("Insufficient stock for " + product.getName());
+            }
 
             totalAmount += product.getPrice() * item.getQuantity();
         }
@@ -60,10 +66,10 @@ public class OrderService {
         // Save order
         Order savedOrder = orderRepository.save(order);
 
-        // Save order items
+        // Save order items and reduce stock
         for (Cart item : cartItems) {
             Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(savedOrder.getOrderId());
@@ -73,6 +79,10 @@ public class OrderService {
             orderItem.setQuantity(item.getQuantity());
             orderItem.setTotalPrice(product.getPrice() * item.getQuantity());
             orderItemRepository.save(orderItem);
+
+            // Reduce product stock quantity
+            product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
+            productRepository.save(product);
         }
 
         // Clear cart
