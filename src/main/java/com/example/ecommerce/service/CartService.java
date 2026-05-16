@@ -1,5 +1,6 @@
 package com.example.ecommerce.service;
 
+import com.example.ecommerce.exception.ResourceNotFoundException;
 import com.example.ecommerce.model.Cart;
 import com.example.ecommerce.model.CartResponse;
 import com.example.ecommerce.model.Product;
@@ -58,6 +59,9 @@ public class CartService {
 
     // Remove item
     public void removeFromCart(Long cartId) {
+        if (!cartRepository.existsById(cartId)) {
+            throw new ResourceNotFoundException("Cart item not found");
+        }
         cartRepository.deleteById(cartId);
     }
 }

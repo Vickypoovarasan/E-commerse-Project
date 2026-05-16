@@ -1,12 +1,14 @@
 package com.example.ecommerce.controller;
 
+import com.example.ecommerce.model.ApiResponse;
 import com.example.ecommerce.model.Product;
 import com.example.ecommerce.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/products")
@@ -16,12 +18,12 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
-
     // Bulk Add Products
-
     @PostMapping
-    public List<Product> addProducts(@RequestBody List<Product> products) {
-        return productService.addProducts(products);
+    public ResponseEntity<ApiResponse> addProducts(@RequestBody List<Product> products) {
+        List<Product> savedProducts = productService.addProducts(products);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ApiResponse("Products successfully inserted", savedProducts));
     }
 
     // Get All Products
@@ -35,20 +37,24 @@ public class ProductController {
 
     // Get Product by ID
     @GetMapping("/{id}")
-    public Optional<Product> getProduct(@PathVariable Long id) {
-        return productService.getProductById(id);
+    public ResponseEntity<ApiResponse> getProduct(@PathVariable Long id) {
+        return productService.getProductById(id)
+                .map(product -> ResponseEntity.ok(new ApiResponse("Product found", product)))
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ApiResponse("Product not found")));
     }
 
     // Update Product
     @PutMapping("/{id}")
-    public Product updateProduct(@PathVariable Long id, @RequestBody Product product) {
-        return productService.updateProduct(id, product);
+    public ResponseEntity<ApiResponse> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        Product updatedProduct = productService.updateProduct(id, product);
+        return ResponseEntity.ok(new ApiResponse("Product successfully updated", updatedProduct));
     }
 
     // Delete Product
     @DeleteMapping("/{id}")
-    public String deleteProduct(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
-        return "Product deleted successfully";
+        return ResponseEntity.ok(new ApiResponse("Product deleted successfully"));
     }
 }

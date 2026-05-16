@@ -1,66 +1,116 @@
-# E-Commerce API Testing Guide
+﻿# E-Commerce API Testing Guide
 
-## Using Postman to Test APIs
-
-### Import Collection
-You can use these examples in Postman by creating requests with the same details.
+## Base URL
+`http://localhost:9090`
 
 ---
 
-## 🔐 Authentication Flow
+## Overview
+This guide covers all backend APIs for the ecommerce application, including authentication, products, cart, orders, payments, and invoices. Use these examples in Postman to verify the backend flow.
 
-### 1. User Registration
-```
-METHOD: POST
-URL: http://localhost:9090/api/users/register
-HEADERS:
-  Content-Type: application/json
+---
 
-BODY (raw JSON):
+## 🔐 Authentication
+
+### 1. Register User
+Endpoint: `POST /api/users/register`
+
+Request:
+```http
+POST {{base_url}}/api/users/register
+Content-Type: application/json
+
 {
   "username": "john_doe",
   "password": "securepass123",
   "email": "john@example.com",
   "role": "CUSTOMER"
 }
+```
 
-RESPONSE (Success):
+Response:
+```json
 {
-  "userId": 1,
-  "username": "john_doe",
-  "email": "john@example.com",
-  "role": "CUSTOMER",
-  "password": "securepass123"
+  "message": "User registered successfully",
+  "data": {
+    "userId": 1,
+    "username": "john_doe",
+    "password": "securepass123",
+    "role": "CUSTOMER",
+    "email": "john@example.com"
+  }
 }
 ```
 
-### 2. User Login
-```
-METHOD: POST
-URL: http://localhost:9090/api/users/login?username=john_doe&password=securepass123
-HEADERS:
-  Content-Type: application/json
+### 2. Login User or Admin
+Endpoint: `POST /api/users/login`
 
-RESPONSE (Success):
+Notes:
+- The `username` parameter may contain a username or an email address.
+- Username, email, and password matching are case-sensitive.
+
+Request by username:
+```http
+POST {{base_url}}/api/users/login?username=john_doe&password=securepass123
+```
+
+Request by email:
+```http
+POST {{base_url}}/api/users/login?username=john@example.com&password=securepass123
+```
+
+Response for regular user:
+```json
 {
-  "userId": 1,
-  "username": "john_doe",
-  "email": "john@example.com",
-  "role": "CUSTOMER"
+  "message": "login successfully",
+  "data": {
+    "userId": 1,
+    "username": "john_doe",
+    "password": "securepass123",
+    "role": "CUSTOMER",
+    "email": "john@example.com"
+  }
 }
 ```
+
+Response for admin user:
+```json
+{
+  "message": "admin login successfully",
+  "data": {
+    "userId": 2,
+    "username": "admin_user",
+    "password": "adminPass123",
+    "role": "ADMIN",
+    "email": "admin@example.com"
+  }
+}
+```
+
+Common login failures:
+- `username and password mismatch`
+- `email and password mismatch`
+- `invalid username or email`
 
 ### 3. Get User by ID
-```
-METHOD: GET
-URL: http://localhost:9090/api/users/1
+Endpoint: `GET /api/users/{id}`
 
-RESPONSE (Success):
+Request:
+```http
+GET {{base_url}}/api/users/1
+```
+
+Response:
+```json
 {
-  "userId": 1,
-  "username": "john_doe",
-  "email": "john@example.com",
-  "role": "CUSTOMER"
+  "message": "User found",
+  "data": {
+    "userId": 1,
+    "username": "john_doe",
+    "password": "securepass123",
+    "role": "CUSTOMER",
+    "email": "john@example.com"
+  }
 }
 ```
 
@@ -69,131 +119,176 @@ RESPONSE (Success):
 ## 🛍️ Product Management
 
 ### 1. Get All Products
-```
-METHOD: GET
-URL: http://localhost:9090/api/products
+Endpoint: `GET /api/products`
 
-RESPONSE (Success):
+Request:
+```http
+GET {{base_url}}/api/products
+```
+
+Response:
+```json
 [
   {
     "productId": 1,
     "name": "Gaming Laptop",
     "description": "High-end gaming laptop with RTX 4090",
     "price": 1299.99,
-    "stockQuantity": 5
+    "stockQuantity": 5,
+    "category": null
   },
   {
     "productId": 2,
     "name": "Wireless Mouse",
     "description": "Ergonomic wireless mouse",
     "price": 49.99,
-    "stockQuantity": 20
+    "stockQuantity": 20,
+    "category": null
   }
 ]
 ```
 
-### 2. Get Product by ID
-```
-METHOD: GET
-URL: http://localhost:9090/api/products/1
+### 2. Get Products by Category
+Endpoint: `GET /api/products?category={category}`
 
-RESPONSE (Success):
-{
-  "productId": 1,
-  "name": "Gaming Laptop",
-  "description": "High-end gaming laptop with RTX 4090",
-  "price": 1299.99,
-  "stockQuantity": 5
-}
+Request:
+```http
+GET {{base_url}}/api/products?category=Electronics
 ```
 
-### 3. Add Products (Bulk)
-```
-METHOD: POST
-URL: http://localhost:9090/api/products
-HEADERS:
-  Content-Type: application/json
-
-BODY (raw JSON):
-[
-  {
-    "name": "Gaming Laptop",
-    "description": "High-end gaming laptop",
-    "price": 1299.99,
-    "stockQuantity": 5
-  },
-  {
-    "name": "Wireless Mouse",
-    "description": "Ergonomic keyboard",
-    "price": 49.99,
-    "stockQuantity": 20
-  },
-  {
-    "name": "USB-C Cable",
-    "description": "Fast charging cable",
-    "price": 19.99,
-    "stockQuantity": 50
-  }
-]
-
-RESPONSE (Success):
+Response:
+```json
 [
   {
     "productId": 1,
     "name": "Gaming Laptop",
     "description": "High-end gaming laptop",
     "price": 1299.99,
-    "stockQuantity": 5
-  },
-  {
-    "productId": 2,
-    "name": "Wireless Mouse",
-    "description": "Ergonomic keyboard",
-    "price": 49.99,
-    "stockQuantity": 20
-  },
-  {
-    "productId": 3,
-    "name": "USB-C Cable",
-    "description": "Fast charging cable",
-    "price": 19.99,
-    "stockQuantity": 50
+    "stockQuantity": 5,
+    "category": "Electronics"
   }
 ]
 ```
 
-### 4. Update Product
-```
-METHOD: PUT
-URL: http://localhost:9090/api/products/1
-HEADERS:
-  Content-Type: application/json
+### 3. Get Product by ID
+Endpoint: `GET /api/products/{id}`
 
-BODY (raw JSON):
+Request:
+```http
+GET {{base_url}}/api/products/1
+```
+
+Response:
+```json
+{
+  "message": "Product found",
+  "data": {
+    "productId": 1,
+    "name": "Gaming Laptop",
+    "description": "High-end gaming laptop with RTX 4090",
+    "price": 1299.99,
+    "stockQuantity": 5,
+    "category": null
+  }
+}
+```
+
+### 4. Add Products (Bulk)
+Endpoint: `POST /api/products`
+
+Request:
+```http
+POST {{base_url}}/api/products
+Content-Type: application/json
+
+[
+  {
+    "name": "Gaming Laptop",
+    "description": "High-end gaming laptop",
+    "price": 1299.99,
+    "stockQuantity": 5,
+    "category": "Electronics"
+  },
+  {
+    "name": "Wireless Mouse",
+    "description": "Ergonomic mouse",
+    "price": 49.99,
+    "stockQuantity": 20,
+    "category": "Electronics"
+  }
+]
+```
+
+Response:
+```json
+{
+  "message": "Products successfully inserted",
+  "data": [
+    {
+      "productId": 1,
+      "name": "Gaming Laptop",
+      "description": "High-end gaming laptop",
+      "price": 1299.99,
+      "stockQuantity": 5,
+      "category": "Electronics"
+    },
+    {
+      "productId": 2,
+      "name": "Wireless Mouse",
+      "description": "Ergonomic mouse",
+      "price": 49.99,
+      "stockQuantity": 20,
+      "category": "Electronics"
+    }
+  ]
+}
+```
+
+### 5. Update Product
+Endpoint: `PUT /api/products/{id}`
+
+Request:
+```http
+PUT {{base_url}}/api/products/1
+Content-Type: application/json
+
 {
   "name": "Gaming Laptop Pro",
   "description": "Ultimate gaming laptop with RTX 4090",
   "price": 1499.99,
-  "stockQuantity": 3
+  "stockQuantity": 3,
+  "category": "Electronics"
 }
+```
 
-RESPONSE (Success):
+Response:
+```json
 {
-  "productId": 1,
-  "name": "Gaming Laptop Pro",
-  "description": "Ultimate gaming laptop with RTX 4090",
-  "price": 1499.99,
-  "stockQuantity": 3
+  "message": "Product successfully updated",
+  "data": {
+    "productId": 1,
+    "name": "Gaming Laptop Pro",
+    "description": "Ultimate gaming laptop with RTX 4090",
+    "price": 1499.99,
+    "stockQuantity": 3,
+    "category": "Electronics"
+  }
 }
 ```
 
-### 5. Delete Product
-```
-METHOD: DELETE
-URL: http://localhost:9090/api/products/3
+### 6. Delete Product
+Endpoint: `DELETE /api/products/{id}`
 
-RESPONSE (Success):
-"Product deleted successfully"
+Request:
+```http
+DELETE {{base_url}}/api/products/3
+```
+
+Response:
+```json
+{
+  "message": "Product deleted successfully"
+}
 ```
 
 ---
@@ -201,34 +296,43 @@ RESPONSE (Success):
 ## 🛒 Shopping Cart
 
 ### 1. Add Item to Cart
-```
-METHOD: POST
-URL: http://localhost:9090/api/cart
-HEADERS:
-  Content-Type: application/json
+Endpoint: `POST /api/cart`
 
-BODY (raw JSON):
+Request:
+```http
+POST {{base_url}}/api/cart
+Content-Type: application/json
+
 {
   "userId": 1,
   "productId": 1,
   "quantity": 1
 }
+```
 
-RESPONSE (Success):
+Response:
+```json
 {
-  "cartId": 1,
-  "userId": 1,
-  "productId": 1,
-  "quantity": 1
+  "message": "Item successfully added to cart",
+  "data": {
+    "cartId": 1,
+    "userId": 1,
+    "productId": 1,
+    "quantity": 1
+  }
 }
 ```
 
-### 2. View User's Cart
-```
-METHOD: GET
-URL: http://localhost:9090/api/cart/1
+### 2. View User Cart
+Endpoint: `GET /api/cart/{userId}`
 
-RESPONSE (Success):
+Request:
+```http
+GET {{base_url}}/api/cart/1
+```
+
+Response:
+```json
 [
   {
     "cartId": 1,
@@ -246,28 +350,39 @@ RESPONSE (Success):
 ```
 
 ### 3. Update Cart Item Quantity
-```
-METHOD: PUT
-URL: http://localhost:9090/api/cart/1?quantity=3
-HEADERS:
-  Content-Type: application/json
+Endpoint: `PUT /api/cart/{cartId}?quantity={value}`
 
-RESPONSE (Success):
+Request:
+```http
+PUT {{base_url}}/api/cart/1?quantity=3
+```
+
+Response:
+```json
 {
-  "cartId": 1,
-  "userId": 1,
-  "productId": 1,
-  "quantity": 3
+  "message": "Cart quantity successfully updated",
+  "data": {
+    "cartId": 1,
+    "userId": 1,
+    "productId": 1,
+    "quantity": 3
+  }
 }
 ```
 
 ### 4. Remove Item from Cart
-```
-METHOD: DELETE
-URL: http://localhost:9090/api/cart/1
+Endpoint: `DELETE /api/cart/{cartId}`
 
-RESPONSE (Success):
-"Item removed from cart"
+Request:
+```http
+DELETE {{base_url}}/api/cart/1
+```
+
+Response:
+```json
+{
+  "message": "Item removed from cart"
+}
 ```
 
 ---
@@ -275,42 +390,54 @@ RESPONSE (Success):
 ## 📦 Order Management
 
 ### 1. Place Order
-```
-METHOD: POST
-URL: http://localhost:9090/api/orders/1
+Endpoint: `POST /api/orders/{userId}`
 
-RESPONSE (Success):
+Request:
+```http
+POST {{base_url}}/api/orders/1
+Content-Type: application/json
+
 {
-  "orderId": 1,
-  "userId": 1,
-  "totalAmount": 2549.97,
-  "orderDate": "2026-05-13T08:30:00",
-  "status": "PLACED"
+  "shippingAddress": "123 Main Street, City",
+  "deliveryNote": "Leave at the front desk"
 }
-
-NOTE: Cart is automatically cleared after order is placed
 ```
 
-### 2. Get User's Orders
+Response:
+```json
+{
+  "message": "Order successfully placed",
+  "data": {
+    "orderId": 1,
+    "userId": 1,
+    "totalAmount": 2549.97,
+    "orderDate": "2026-05-13T08:30:00",
+    "status": "PLACED",
+    "shippingAddress": "123 Main Street, City",
+    "deliveryNote": "Leave at the front desk"
+  }
+}
 ```
-METHOD: GET
-URL: http://localhost:9090/api/orders/1
 
-RESPONSE (Success):
+### 2. Get User Orders
+Endpoint: `GET /api/orders/{userId}`
+
+Request:
+```http
+GET {{base_url}}/api/orders/1
+```
+
+Response:
+```json
 [
   {
     "orderId": 1,
     "userId": 1,
     "totalAmount": 2549.97,
     "orderDate": "2026-05-13T08:30:00",
-    "status": "PLACED"
-  },
-  {
-    "orderId": 2,
-    "userId": 1,
-    "totalAmount": 599.99,
-    "orderDate": "2026-05-13T09:15:00",
-    "status": "PLACED"
+    "status": "PLACED",
+    "shippingAddress": "123 Main Street, City",
+    "deliveryNote": "Leave at the front desk"
   }
 ]
 ```
@@ -320,160 +447,203 @@ RESPONSE (Success):
 ## 💳 Payment Processing
 
 ### 1. Process Payment
-```
-METHOD: POST
-URL: http://localhost:9090/api/payments/1
+Endpoint: `POST /api/payments/{orderId}`
 
-RESPONSE (Success):
-{
-  "paymentId": 1,
-  "orderId": 1,
-  "amount": 2549.97,
-  "paymentStatus": "SUCCESS",
-  "paymentDate": "2026-05-13T08:31:00"
-}
+Request:
+```http
+POST {{base_url}}/api/payments/1
 ```
 
----
-
-## 🧪 Complete Test Scenario
-
-### Scenario: Customer makes a purchase
-
-**Step 1: Register**
-- POST `/api/users/register`
-- Save: `userId`
-
-**Step 2: Add Products**
-- POST `/api/products` (bulk add)
-- Save: `productIds`
-
-**Step 3: Add to Cart**
-- POST `/api/cart` (productId: 1, quantity: 1)
-- Save: `cartId1`
-- POST `/api/cart` (productId: 2, quantity: 2)
-- Save: `cartId2`
-
-**Step 4: View Cart**
-- GET `/api/cart/{userId}`
-
-**Step 5: Place Order**
-- POST `/api/orders/{userId}`
-- Save: `orderId`
-
-**Step 6: Process Payment**
-- POST `/api/payments/{orderId}`
-- Verify: paymentStatus = "SUCCESS"
-
-**Step 7: View Orders**
-- GET `/api/orders/{userId}`
-- Verify: order status = "PLACED"
-
----
-
-## 🔍 Common Response Codes
-
-| Code | Meaning |
-|------|---------|
-| 200 | Success |
-| 201 | Created |
-| 400 | Bad Request |
-| 404 | Not Found |
-| 500 | Server Error |
-
----
-
-## 💡 Error Handling Examples
-
-### User Not Found
-```
-GET /api/users/999
-Status: 200
-Response: null
-```
-
-### Product Not Found in Cart Update
-```
-PUT /api/cart/999?quantity=5
-Status: 500
-Response: "Cart not found"
-```
-
-### Invalid Product
-```
-POST /api/cart
-Body: {"userId": 1, "productId": 999, "quantity": 1}
-Status: 500
-Response: "Product not found"
-```
-
----
-
-## 🎯 Testing Checklist
-
-- [ ] User can register
-- [ ] User can login
-- [ ] Admin can add products
-- [ ] Products can be retrieved
-- [ ] User can add item to cart
-- [ ] User can view cart
-- [ ] User can update quantity
-- [ ] User can remove item from cart
-- [ ] User can place order
-- [ ] Cart clears after order
-- [ ] User can view orders
-- [ ] Payment can be processed
-- [ ] Payment shows SUCCESS status
-
----
-
-## 📝 Postman Collection Template
-
+Response:
 ```json
 {
-  "info": {
-    "name": "E-Commerce API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "User Registration",
-      "request": {
-        "method": "POST",
-        "url": "http://localhost:9090/api/users/register",
-        "header": [{"key": "Content-Type", "value": "application/json"}]
-      }
-    }
-  ]
+  "message": "Payment processed successfully",
+  "data": {
+    "paymentId": 1,
+    "orderId": 1,
+    "amount": 2549.97,
+    "paymentStatus": "SUCCESS",
+    "paymentDate": "2026-05-13T08:31:00"
+  }
 }
 ```
 
 ---
 
-## 🚀 Pro Tips
+## 🧾 Invoice Generation
 
-1. **Use Environment Variables** in Postman
-   - Set `base_url = http://localhost:9090`
-   - Use `{{base_url}}/api/users/register`
+### 1. Download Invoice PDF
+Endpoint: `GET /api/invoices/{orderId}`
 
-2. **Chain Requests** using Tests
-   - Extract `userId` from registration response
-   - Use in next requests
+Request:
+```http
+GET {{base_url}}/api/invoices/1
+```
 
-3. **Test Data Management**
-   - Create dedicated test user
-   - Keep test product IDs
-   - Clear cart before new tests
+Response:
+- `200 OK`
+- `Content-Type: application/pdf`
+- Downloaded file: `invoice-1.pdf`
 
-4. **Monitor Database**
-   ```sql
-   SELECT * FROM user;
-   SELECT * FROM product;
-   SELECT * FROM cart;
-   SELECT * FROM orders;
-   SELECT * FROM payment;
-   ```
+### 2. Download Invoice Text
+Endpoint: `GET /api/invoices/{orderId}/txt`
+
+Request:
+```http
+GET {{base_url}}/api/invoices/1/txt
+```
+
+Response:
+- `200 OK`
+- `Content-Type: text/plain`
+- Downloaded file: `invoice-1.txt`
 
 ---
 
-All APIs have been tested and verified working! 🎉
+## ✅ End-to-end Test Flow
+
+1. Register a customer
+2. Login as customer using username or email
+3. Add products as admin
+4. Add product items to the customer cart
+5. View cart contents
+6. Update cart quantity if needed
+7. Place order for the customer
+8. Process payment for the order
+9. Download invoice after order creation
+10. View customer orders
+
+---
+
+## 🚨 Error Cases
+
+### Login with wrong password
+Request:
+```http
+POST {{base_url}}/api/users/login?username=john_doe&password=wrongpass
+```
+Response:
+```json
+{
+  "timestamp": "...",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "username and password mismatch",
+  "path": "/api/users/login"
+}
+```
+
+### Login with wrong email
+Request:
+```http
+POST {{base_url}}/api/users/login?username=john@example.com&password=wrongpass
+```
+Response:
+```json
+{
+  "timestamp": "...",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "email and password mismatch",
+  "path": "/api/users/login"
+}
+```
+
+### Invalid product update
+Request:
+```http
+PUT {{base_url}}/api/products/999
+Content-Type: application/json
+
+{
+  "name": "Missing Product",
+  "description": "Test",
+  "price": 9.99,
+  "stockQuantity": 1
+}
+```
+Response:
+```json
+{
+  "timestamp": "...",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Product not found",
+  "path": "/api/products/999"
+}
+```
+
+### Missing cart item
+Request:
+```http
+DELETE {{base_url}}/api/cart/999
+```
+Response:
+```json
+{
+  "timestamp": "...",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Cart item not found",
+  "path": "/api/cart/999"
+}
+```
+
+### Missing order for payment
+Request:
+```http
+POST {{base_url}}/api/payments/999
+```
+Response:
+```json
+{
+  "timestamp": "...",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Order not found",
+  "path": "/api/payments/999"
+}
+```
+
+---
+
+## 📌 Postman Setup
+
+- Create environment variable `base_url` = `http://localhost:9090`
+- Use `{{base_url}}` in request URLs
+- Set `Content-Type: application/json` for POST/PUT requests
+- Save response values to environment variables for chained requests
+
+---
+
+## 🔢 API Summary
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/users/register` | POST | Register user or admin |
+| `/api/users/login` | POST | Login by username or email |
+| `/api/users/{id}` | GET | Get user by id |
+| `/api/products` | GET | List products |
+| `/api/products?category=...` | GET | Filter products by category |
+| `/api/products` | POST | Bulk insert products |
+| `/api/products/{id}` | GET | Get product by id |
+| `/api/products/{id}` | PUT | Update product |
+| `/api/products/{id}` | DELETE | Delete product |
+| `/api/cart` | POST | Add item to cart |
+| `/api/cart/{userId}` | GET | View cart by user |
+| `/api/cart/{cartId}` | PUT | Update cart quantity |
+| `/api/cart/{cartId}` | DELETE | Remove cart item |
+| `/api/orders/{userId}` | POST | Place order |
+| `/api/orders/{userId}` | GET | Get user orders |
+| `/api/payments/{orderId}` | POST | Process payment |
+| `/api/invoices/{orderId}` | GET | Download invoice PDF |
+| `/api/invoices/{orderId}/txt` | GET | Download invoice text |
+
+---
+
+## ✅ Notes
+
+- The login flow accepts `username` as either username or email.
+- Admin login returns `admin login successfully`.
+- Most POST/PUT/DELETE responses are wrapped in `message` and `data`.
+- GET endpoints may return raw arrays for cart and orders.

@@ -1,5 +1,6 @@
 package com.example.ecommerce.service;
 
+import com.example.ecommerce.exception.BadRequestException;
 import com.example.ecommerce.model.Cart;
 import com.example.ecommerce.model.Order;
 import com.example.ecommerce.model.OrderItem;
@@ -36,7 +37,7 @@ public class OrderService {
         List<Cart> cartItems = cartRepository.findByUserId(userId);
 
         if (cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            throw new BadRequestException("Cart is empty");
         }
 
         double totalAmount = 0;

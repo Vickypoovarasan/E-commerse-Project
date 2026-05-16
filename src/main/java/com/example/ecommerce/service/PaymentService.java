@@ -1,5 +1,6 @@
 package com.example.ecommerce.service;
 
+import com.example.ecommerce.exception.ResourceNotFoundException;
 import com.example.ecommerce.model.Order;
 import com.example.ecommerce.model.Payment;
 import com.example.ecommerce.repository.OrderRepository;
@@ -22,7 +23,7 @@ public class PaymentService {
     public Payment processPayment(Long orderId) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         Payment payment = new Payment();
         payment.setOrderId(orderId);

@@ -1,5 +1,6 @@
 package com.example.ecommerce.service;
 
+import com.example.ecommerce.exception.BadRequestException;
 import com.example.ecommerce.model.User;
 import com.example.ecommerce.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,18 +20,36 @@ public class UserService {
     }
 
     // Login User
+    public User loginUser(String login, String password) {
 
-    public User loginUser(String username, String password) {
+        Optional<User> userOptional = userRepository.findByUsername(login);
 
-        Optional<User> user = userRepository.findByUsername(username);
-
-        if (user.isPresent() && user.get().getPassword().equals(password)) {
-            return user.get();   // ✅ return full user
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (!user.getUsername().equals(login)) {
+                throw new BadRequestException("invalid username or email");
+            }
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+            throw new BadRequestException("username and password mismatch");
         }
 
-        return null;
-    }
+        userOptional = userRepository.findByEmail(login);
 
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (!user.getEmail().equals(login)) {
+                throw new BadRequestException("invalid username or email");
+            }
+            if (user.getPassword().equals(password)) {
+                return user;
+            }
+            throw new BadRequestException("email and password mismatch");
+        }
+
+        throw new BadRequestException("invalid username or email");
+    }
 
     // Get User by ID
     public Optional<User> getUserById(Long userId) {
