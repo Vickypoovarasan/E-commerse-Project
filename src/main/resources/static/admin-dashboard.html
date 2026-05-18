@@ -4,162 +4,383 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
-
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-brands/css/uicons-brands.css'>
-
     <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
 
-<!-- NAVBAR -->
 <nav class="navbar navbar-dark">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
+    <div class="container-fluid d-flex justify-content-between align-items-center py-3">
         <div>
-            <span class="navbar-brand">Admin Dashboard</span>
-            <div class="admin-info" style="font-size: 11px; margin-top: 5px;">
+            <div class="brand-text">Admin Dashboard</div>
+            <div class="admin-info" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
                 Logged in as: <strong id="adminUsername"></strong>
             </div>
         </div>
-        <div>
-            <button onclick="logout()" class="btn btn-warning btn-sm">Logout</button>
-        </div>
+        <button onclick="logout()" class="btn btn-secondary btn-sm">Logout</button>
     </div>
 </nav>
 
-<div class="container mt-4">
-
-    <!-- STATS -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="stats-box">
-                <div class="stats-number" id="totalProducts">0</div>
-                <div class="stats-label">Total Products</div>
+<div class="page-container">
+    <div class="card dashboard-card">
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stats-box">
+                    <div class="stats-number" id="totalProducts">0</div>
+                    <div class="stats-label">Total Products</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box">
+                    <div class="stats-number" id="totalUsers">0</div>
+                    <div class="stats-label">Last User Search</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-box">
+                    <div class="stats-number" id="orderCount">0</div>
+                    <div class="stats-label">Last Order Count</div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- PAGE TITLE -->
-    <div class="page-title">Product Management</div>
+        <div class="page-title">Admin Control Center</div>
 
-    <!-- ADD PRODUCT BUTTON -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button onclick="goAddProduct()" class="btn-add-product">Add New Product</button>
-    </div>
-
-    <!-- PRODUCTS TABLE -->
-    <div class="table-container">
-        <table class="table table-hover" id="productsTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Product Name</th>
-                    <th>Description</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="productsList">
-            </tbody>
-        </table>
-        <div id="noData" class="no-data" style="display: none;">
-            <h5>📭 No products found</h5>
-            <p>Click "Add New Product" to create your first product</p>
+        <div class="tab-nav">
+            <button type="button" class="tab-button active" data-tab="productsSection">Products</button>
+            <button type="button" class="tab-button" data-tab="usersSection">Users</button>
+            <button type="button" class="tab-button" data-tab="ordersSection">Orders</button>
+            <button type="button" class="tab-button" data-tab="paymentsSection">Payments</button>
         </div>
-    </div>
 
+        <section id="productsSection" class="tab-section active">
+            <div class="section-card">
+                <div class="section-heading">Product Management</div>
+                <div class="section-actions">
+                    <button onclick="goAddProduct()" class="btn-add-product">Add New Product</button>
+                    <button onclick="loadProducts()" class="btn btn-secondary">Refresh Products</button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table table-hover" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productsList"></tbody>
+                </table>
+                <div id="noData" class="no-data" style="display: none;">
+                    <h5>📭 No products available</h5>
+                    <p>Use the button above to add your first product.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="usersSection" class="tab-section">
+            <div class="section-card">
+                <div class="section-heading">User Manager</div>
+                <div class="admin-field-row">
+                    <input id="userSearchId" class="form-control" type="number" min="1" placeholder="Enter user ID">
+                    <button onclick="findUser()" class="btn btn-custom">Lookup User</button>
+                </div>
+                <div id="userStatus" class="section-status"></div>
+            </div>
+
+            <div id="userDetails" class="section-card" style="display: none;">
+                <div class="section-heading">User Details</div>
+                <div class="section-detail">
+                    <div class="summary-line"><span>ID</span><strong id="detailUserId"></strong></div>
+                    <div class="summary-line"><span>Username</span><strong id="detailUsername"></strong></div>
+                    <div class="summary-line"><span>Email</span><strong id="detailEmail"></strong></div>
+                    <div class="summary-line"><span>Role</span><strong id="detailRole"></strong></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="ordersSection" class="tab-section">
+            <div class="section-card">
+                <div class="section-heading">Order Lookup</div>
+                <div class="admin-field-row">
+                    <input id="orderSearchUserId" class="form-control" type="number" min="1" placeholder="User ID for orders">
+                    <button onclick="loadOrdersByUser()" class="btn btn-custom">Load Orders</button>
+                </div>
+                <div id="ordersStatus" class="section-status"></div>
+            </div>
+
+            <div id="ordersList"></div>
+        </section>
+
+        <section id="paymentsSection" class="tab-section">
+            <div class="section-card">
+                <div class="section-heading">Payment History</div>
+                <p class="form-description">All completed payments are listed here automatically.</p>
+                <div id="paymentStatus" class="section-status"></div>
+            </div>
+
+            <div id="paymentList" class="payment-list"></div>
+        </section>
+    </div>
 </div>
 
 <script>
-
-    // ✅ Check admin login
-    let userId = localStorage.getItem("userId");
-    let userType = localStorage.getItem("userType");
-    let adminUsername = localStorage.getItem("username");
+    const userId = localStorage.getItem("userId");
+    const userType = localStorage.getItem("userType");
+    const adminUsername = localStorage.getItem("username");
 
     if (!userId || userType !== "ADMIN") {
-        alert("❌ Please login as admin first");
+        alert("Please login as admin first.");
         window.location.href = "admin-login.html";
     }
 
-    // Display admin username
     document.getElementById("adminUsername").innerText = adminUsername || "Admin";
+    const API_BASE_URL = window.location.protocol === 'file:' ? 'http://localhost:9091' : window.location.origin;
 
-    // ✅ Fetch all products
-    function loadProducts() {
-        fetch("http://localhost:9090/api/products")
-        .then(res => res.json())
-        .then(data => {
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(section => section.classList.remove('active'));
+            button.classList.add('active');
+            document.getElementById(button.dataset.tab).classList.add('active');
 
-            let container = document.getElementById("productsList");
-            container.innerHTML = "";
-
-            if(data.length === 0) {
-                document.getElementById("noData").style.display = "block";
-                document.getElementById("productsTable").style.display = "none";
-                document.getElementById("totalProducts").innerText = 0;
-                return;
+            if (button.dataset.tab === 'paymentsSection') {
+                loadPayments();
             }
-
-            document.getElementById("noData").style.display = "none";
-            document.getElementById("productsTable").style.display = "table";
-            document.getElementById("totalProducts").innerText = data.length;
-
-            data.forEach(product => {
-                let row = document.createElement("tr");
-
-                row.innerHTML = `
-                    <td><strong>${product.productId}</strong></td>
-                    <td>${product.name}</td>
-                    <td>${product.description || "N/A"}</td>
-                    <td>${product.category || "Uncategorized"}</td>
-                    <td><strong>₹${product.price}</strong></td>
-                    <td>${product.stockQuantity}</td>
-                    <td>
-                        <button onclick="editProduct(${product.productId})" class="btn-edit">Edit</button>
-                        <button onclick="deleteProduct(${product.productId})" class="btn-delete">Delete</button>
-                    </td>
-                `;
-
-                container.appendChild(row);
-            });
-        })
-        .catch(err => {
-            console.error("Error loading products:", err);
-            alert("❌ Failed to load products");
         });
+    });
+
+    function showStatus(elementId, message, danger = false) {
+        const target = document.getElementById(elementId);
+        target.textContent = message;
+        target.style.color = danger ? 'var(--danger-color)' : 'var(--text-muted)';
     }
 
-    // ✅ Edit product
+    function loadProducts() {
+        fetch(`${API_BASE_URL}/api/products`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("productsList");
+                container.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    document.getElementById("noData").style.display = "block";
+                    document.getElementById("productsTable").style.display = "none";
+                    document.getElementById("totalProducts").innerText = 0;
+                    return;
+                }
+
+                document.getElementById("noData").style.display = "none";
+                document.getElementById("productsTable").style.display = "table";
+                document.getElementById("totalProducts").innerText = data.length;
+
+                data.forEach(product => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td><strong>${product.productId}</strong></td>
+                        <td>
+                            <strong>${product.name}</strong><br>
+                            <span class="text-muted">${product.description || 'No description'}</span>
+                        </td>
+                        <td>${product.category || 'Uncategorized'}</td>
+                        <td>₹${product.price}</td>
+                        <td>${product.stockQuantity}</td>
+                        <td class="d-flex gap-2 flex-wrap">
+                            <button onclick="editProduct(${product.productId})" class="btn-edit">Edit</button>
+                            <button onclick="deleteProduct(${product.productId})" class="btn-delete">Delete</button>
+                        </td>
+                    `;
+                    container.appendChild(row);
+                });
+            })
+            .catch(err => {
+                console.error("Error loading products:", err);
+                showStatus('ordersStatus', 'Failed to load products.', true);
+            });
+    }
+
+    function findUser() {
+        const id = parseInt(document.getElementById("userSearchId").value, 10);
+        if (!id || id <= 0) {
+            showStatus('userStatus', 'Enter a valid user ID.', true);
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/api/users/${id}`)
+            .then(res => res.json())
+            .then(response => {
+                if (!response || !response.data) {
+                    throw new Error('User not found');
+                }
+                const user = response.data;
+                document.getElementById("detailUserId").innerText = user.userId;
+                document.getElementById("detailUsername").innerText = user.username;
+                document.getElementById("detailEmail").innerText = user.email;
+                document.getElementById("detailRole").innerText = user.role || 'CUSTOMER';
+                document.getElementById("userDetails").style.display = 'block';
+                showStatus('userStatus', `User #${id} loaded successfully.`);
+                document.getElementById("totalUsers").innerText = user.userId;
+            })
+            .catch(err => {
+                console.error("Error finding user:", err);
+                showStatus('userStatus', 'Unable to find user.', true);
+                document.getElementById("userDetails").style.display = 'none';
+            });
+    }
+
+    function loadOrdersByUser() {
+        const id = parseInt(document.getElementById("orderSearchUserId").value, 10);
+        if (!id || id <= 0) {
+            showStatus('ordersStatus', 'Enter a valid user ID to fetch orders.', true);
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/api/orders/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById("ordersList");
+                list.innerHTML = "";
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="no-data"><h5>No orders found for this user.</h5></div>';
+                    showStatus('ordersStatus', 'No orders returned for user ID ' + id + '.');
+                    document.getElementById("orderCount").innerText = 0;
+                    return;
+                }
+
+                let totalOrders = 0;
+                data.forEach(order => {
+                    totalOrders += 1;
+                    const orderCard = document.createElement("div");
+                    orderCard.className = 'order-card';
+                    orderCard.innerHTML = `
+                        <h5>Order #${order.orderId}</h5>
+                        <p><strong>Status:</strong> ${order.status || 'N/A'}</p>
+                        <p><strong>Total:</strong> ₹${order.totalAmount}</p>
+                        <p><strong>Date:</strong> ${order.orderDate || 'N/A'}</p>
+                        <p><strong>Shipping:</strong> ${order.shippingAddress || 'Not provided'}</p>
+                        <p><strong>Note:</strong> ${order.deliveryNote || 'None'}</p>
+                        <div class="section-actions">
+                            <button onclick="downloadInvoice(${order.orderId})" class="btn btn-secondary btn-sm">Invoice PDF</button>
+                            <button onclick="downloadInvoiceTxt(${order.orderId})" class="btn btn-secondary btn-sm">Invoice TXT</button>
+                        </div>
+                    `;
+                    list.appendChild(orderCard);
+                });
+
+                showStatus('ordersStatus', `Loaded ${totalOrders} order(s) for user ${id}.`);
+                document.getElementById("orderCount").innerText = totalOrders;
+            })
+            .catch(err => {
+                console.error("Error loading orders:", err);
+                showStatus('ordersStatus', 'Unable to load orders.', true);
+                document.getElementById("ordersList").innerHTML = '';
+            });
+    }
+
+    function loadPayments() {
+        fetch(`${API_BASE_URL}/api/payments`)
+            .then(res => res.json())
+            .then(response => {
+                const payments = response.data || response;
+                const list = document.getElementById("paymentList");
+                list.innerHTML = "";
+
+                if (!payments || payments.length === 0) {
+                    list.innerHTML = '<div class="no-data"><h5>No payment records available.</h5></div>';
+                    showStatus('paymentStatus', 'No payment records found.');
+                    return;
+                }
+
+                payments.forEach(details => {
+                    const payment = details.payment || {};
+                    const order = details.order || {};
+                    const user = details.user || {};
+                    const items = details.orderItems || [];
+
+                    const card = document.createElement('div');
+                    card.className = 'payment-card';
+                    card.innerHTML = `
+                        <h5>Payment #${payment.paymentId || 'N/A'}</h5>
+                        <p><strong>Status:</strong> ${payment.paymentStatus || 'N/A'}</p>
+                        <p><strong>Amount:</strong> ₹${payment.amount || 0}</p>
+                        <p><strong>Date:</strong> ${payment.paymentDate || 'N/A'}</p>
+                        <p><strong>Order ID:</strong> ${payment.orderId || 'N/A'}</p>
+                        <p><strong>User:</strong> ${user.username || 'N/A'} (${user.email || 'No email'})</p>
+                        <div class="section-actions">
+                            <button onclick="downloadInvoice(${order.orderId})" class="btn btn-secondary btn-sm">Invoice PDF</button>
+                            <button onclick="downloadInvoiceTxt(${order.orderId})" class="btn btn-secondary btn-sm">Invoice TXT</button>
+                        </div>
+                        <div class="section-detail">
+                            <div class="summary-line"><span>Order Total</span><strong>₹${order.totalAmount || 0}</strong></div>
+                            <div class="summary-line"><span>Order Status</span><strong>${order.status || 'N/A'}</strong></div>
+                            <div class="summary-line"><span>Shipping</span><strong>${order.shippingAddress || 'Not provided'}</strong></div>
+                        </div>
+                        <div class="section-heading">Items</div>
+                        ${items.length ? items.map(item => `
+                            <div class="payment-item-card">
+                                <div><strong>${item.productName || 'Unknown'}</strong> (ID: ${item.productId})</div>
+                                <div>Qty: ${item.quantity} × ₹${item.unitPrice}</div>
+                                <div>Total: ₹${item.totalPrice}</div>
+                            </div>
+                        `).join('') : '<div class="no-data">No items found for this payment.</div>'}
+                    `;
+                    list.appendChild(card);
+                });
+
+                showStatus('paymentStatus', `Loaded ${payments.length} payment record(s).`);
+            })
+            .catch(err => {
+                console.error('Error loading payments:', err);
+                document.getElementById('paymentList').innerHTML = '';
+                showStatus('paymentStatus', 'Unable to load payments.', true);
+            });
+    }
+
+    function downloadInvoice(orderId) {
+        window.location.href = `/api/invoices/${orderId}`;
+    }
+
+    function downloadInvoiceTxt(orderId) {
+        window.location.href = `/api/invoices/${orderId}/txt`;
+    }
+
+    function downloadInvoiceFromPayment() {
+        const orderId = document.getElementById("downloadInvoiceBtn").dataset.orderId;
+        if (!orderId) {
+            showStatus('paymentStatus', 'No order available for invoice download.', true);
+            return;
+        }
+        downloadInvoice(orderId);
+    }
+
     function editProduct(productId) {
         localStorage.setItem("editProductId", productId);
         window.location.href = "edit-product.html";
     }
 
-    // ✅ Delete product
     function deleteProduct(productId) {
-        if(confirm("Are you sure you want to delete this product?")) {
-            fetch(`http://localhost:9090/api/products/${productId}`, {
-                method: "DELETE"
-            })
-            .then(res => res.text())
-            .then(message => {
-                alert("Product deleted successfully");
+        if (!confirm("Are you sure you want to delete this product?")) {
+            return;
+        }
+
+        fetch(`/api/products/${productId}`, {
+            method: "DELETE"
+        })
+            .then(() => {
+                alert("Product deleted successfully.");
                 loadProducts();
             })
             .catch(err => {
                 console.error("Error deleting product:", err);
-                alert("❌ Failed to delete product");
+                alert("Failed to delete product.");
             });
-        }
     }
 
-    // ✅ Navigation
     function goAddProduct() {
         window.location.href = "add-product.html";
     }
@@ -169,12 +390,8 @@
         window.location.href = "admin-login.html";
     }
 
-    // Load products on page load
     loadProducts();
-
-    // Refresh products every 10 seconds
     setInterval(loadProducts, 10000);
-
 </script>
 
 </body>

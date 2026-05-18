@@ -1,113 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login</title>
-
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
-    <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-brands/css/uicons-brands.css'>
-
     <link rel="stylesheet" href="theme.css">
-</head>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+        }
 
+        .form-wrapper {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #8e2de2, #4a00e0);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
 <body>
 
-<div class="container auth-page min-vh-100 d-flex align-items-center justify-content-center">
-
-    <div class="row justify-content-center w-100">
-        <div class="col-md-5 col-lg-4">
-
-            <div class="login-box text-center">
-
-                <div class="badge-admin">ADMIN LOGIN</div>
-
-                <h3>Administrator Access</h3>
-                <p class="text-muted small">Only admins can access this portal</p>
-
-                <input id="username" class="form-control mt-4" placeholder="Admin Username" autocomplete="off">
-
-                <input id="password" type="password" class="form-control mt-3" placeholder="Password" autocomplete="off">
-
-                <button onclick="adminLogin()" class="btn btn-custom w-60 mt-4">
-                    Login as Admin
-                </button>
-
-                <div id="errorMsg" class="error-msg"></div>
-
-                <hr class="my-4">
-
-                <p class="text-muted small">
-                    <a href="login.html">Customer Login</a>
-                </p>
-
-            </div>
-
+<div class="form-wrapper">
+    <form class="form" id="adminForm">
+        <div style="text-align: center;">
+            <div class="admin-badge">🔐 ADMIN LOGIN</div>
+            <h2 style="margin: 0 0 10px 0; color: #151717;">Administrator Access</h2>
+            <p style="color: #595b5f; margin: 0 0 20px 0; font-size: 14px;">Only admins can access this portal</p>
         </div>
-    </div>
 
+        <div class="flex-column">
+            <label>Admin Username</label>
+        </div>
+        <div class="inputForm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 24 24" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <input placeholder="Enter Admin Username" class="input" type="text" id="username" autocomplete="off">
+        </div>
+
+        <div class="flex-column" style="margin-top: 15px;">
+            <label>Password</label>
+        </div>
+        <div class="inputForm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="-64 0 512 512" height="20">
+                <path d="m336 512h-288c-26.453125 0-48-21.523438-48-48v-224c0-26.476562 21.546875-48 48-48h288c26.453125 0 48 21.523438 48 48v224c0 26.476562-21.546875 48-48 48zm-288-288c-8.8125 0-16 7.167969-16 16v224c0 8.832031 7.1875 16 16 16h288c8.8125 0 16-7.167969 16-16v-224c0-8.832031-7.1875-16-16-16zm0 0"></path>
+                <path d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"></path>
+            </svg>
+            <input placeholder="Enter your Password" class="input" type="password" id="password" autocomplete="off">
+        </div>
+
+        <div class="flex-row" style="margin-top: 15px;">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="rememberMe">
+                <label for="rememberMe">Remember me</label>
+            </div>
+            <span class="span" onclick="alert('Password recovery coming soon');">Forgot password?</span>
+        </div>
+
+        <button type="button" onclick="adminLogin()" class="button-submit">Login as Admin</button>
+
+        <div id="errorMsg" style="color: #ee0d0d; text-align: center; margin-top: 10px; font-weight: 600; display: none;"></div>
+
+        <p class="p" style="margin-top: 20px; border-top: 1px solid #ecedec; padding-top: 15px;">
+            Customer? <span class="span" onclick="window.location.href='login.html';">Customer Login</span>
+        </p>
+    </form>
 </div>
 
 <script>
-
-    function adminLogin(){
-
-        let username = document.getElementById("username").value;
-        let password = document.getElementById("password").value;
+    function adminLogin() {
+        let username = document.getElementById("username").value.trim();
+        let password = document.getElementById("password").value.trim();
         let errorMsg = document.getElementById("errorMsg");
 
-        if(!username || !password){
+        if (!username || !password) {
+            errorMsg.textContent = "Please enter username and password";
             errorMsg.style.display = "block";
-            errorMsg.textContent = "❌ Please enter username and password";
             return;
         }
 
-        fetch(`http://localhost:9090/api/users/login?username=${username}&password=${password}`, {
+        errorMsg.style.display = "none";
+        document.querySelector(".button-submit").disabled = true;
+        document.querySelector(".button-submit").textContent = "Verifying...";
+
+        fetch(`/api/users/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
             method: "POST"
         })
         .then(res => res.json())
-        .then(user => {
-
-            if(user && user.userId){
-
-                // ✅ Validate role is ADMIN
-                if(user.role !== "ADMIN"){
+        .then(response => {
+            const user = response.data || response;
+            if (user && user.userId) {
+                // Validate role is ADMIN
+                if (user.role !== "ADMIN") {
+                    errorMsg.textContent = "⛔ Access Denied! Only ADMINS can login here";
                     errorMsg.style.display = "block";
-                    errorMsg.textContent = "❌ Access Denied! Only admins can login here";
+                    document.querySelector(".button-submit").disabled = false;
+                    document.querySelector(".button-submit").textContent = "Login as Admin";
                     return;
                 }
 
-                // ✅ Store admin data
+                // Store admin data
                 localStorage.setItem("userId", user.userId);
                 localStorage.setItem("username", user.username);
                 localStorage.setItem("role", user.role);
                 localStorage.setItem("email", user.email);
                 localStorage.setItem("userType", "ADMIN");
 
-                // ✅ Redirect to admin dashboard
+                // Redirect to admin dashboard
                 window.location.href = "admin-dashboard.html";
-
             } else {
+                errorMsg.textContent = response.message || "Invalid username or password";
                 errorMsg.style.display = "block";
-                errorMsg.textContent = "❌ Invalid Username or Password";
+                document.querySelector(".button-submit").disabled = false;
+                document.querySelector(".button-submit").textContent = "Login as Admin";
             }
         })
         .catch(error => {
-            console.error("Login error:", error);
+            console.error("Admin login error:", error);
+            errorMsg.textContent = "Login failed. Please try again.";
             errorMsg.style.display = "block";
-            errorMsg.textContent = "❌ Login failed. Please try again.";
+            document.querySelector(".button-submit").disabled = false;
+            document.querySelector(".button-submit").textContent = "Login as Admin";
         });
     }
 
-    // Enter key to login
-    document.addEventListener("keypress", function(event){
-        if(event.key === "Enter"){
+    // Allow Enter key to submit
+    document.getElementById("password").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
             adminLogin();
         }
     });
-
 </script>
 
 </body>

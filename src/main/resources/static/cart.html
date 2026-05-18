@@ -1,105 +1,114 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cart</title>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-regular-rounded/css/uicons-regular-rounded.css'>
-  <link rel='stylesheet' href='https://cdn-uicons.flaticon.com/2.1.0/uicons-brands/css/uicons-brands.css'>
-
-  <link rel="stylesheet" href="theme.css">
+    <title>Shopping Cart</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
 </head>
-
 <body>
 
 <nav class="navbar navbar-dark">
-  <div class="container d-flex justify-content-between">
-    <span class="navbar-brand">Cart</span>
-    <button onclick="goHome()" class="btn btn-warning">Home</button>
-  </div>
+    <div class="container d-flex justify-content-between align-items-center py-3">
+        <div class="brand-text">Your Cart</div>
+        <button onclick="goHome()" class="btn btn-secondary btn-sm">Home</button>
+    </div>
 </nav>
 
-<div class="container mt-4">
+<div class="page-container">
+    <div class="form card">
+        <h2>Items in Cart</h2>
+        <p class="form-description">Review the items you selected and move to checkout when ready.</p>
 
-  <div id="cartList"></div>
+        <div id="cartList"></div>
 
-  <div class="total-box">
-    <h4>Total Items: <span id="totalItems">0</span></h4>
-    <h4>Total Amount: ₹<span id="totalAmount">0</span></h4>
+        <div class="info-card">
+            <div class="summary-line"><span>Total Items</span><strong><span id="totalItems">0</span></strong></div>
+            <div class="summary-line"><span>Total Amount</span><strong>₹<span id="totalAmount">0</span></strong></div>
+        </div>
 
-    <button onclick="goPayment()" class="btn btn-checkout w-100 mt-2">
-      Checkout Now
-    </button>
-  </div>
-
+        <button onclick="goPayment()" class="btn btn-custom checkout-button">Checkout Now</button>
+    </div>
 </div>
 
 <script>
+    const userId = localStorage.getItem("userId");
 
-  let userId = localStorage.getItem("userId");
+    function loadCart() {
+        if (!userId) {
+            alert("Please login to view your cart.");
+            window.location.href = "login.html";
+            return;
+        }
 
-  // ✅ GET CART
-  fetch(`http://localhost:9090/api/cart/${userId}`)
-  .then(res => res.json())
-  .then(data => {
+        fetch(`/api/cart/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("cartList");
+                container.innerHTML = "";
 
-      let container = document.getElementById("cartList");
-      container.innerHTML = "";
+                let totalItems = 0;
+                let totalAmount = 0;
 
-      let totalItems = 0;
-      let totalAmount = 0;
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="no-data"><h5>No items in cart yet.</h5><p>Browse products and add them to your cart.</p></div>';
+                }
 
-      data.forEach(c => {
+                data.forEach(c => {
+                    const itemTotal = c.price * c.quantity;
+                    totalItems += c.quantity;
+                    totalAmount += itemTotal;
 
-          let itemTotal = c.price * c.quantity;
+                    const div = document.createElement("div");
+                    div.className = "card product-card mb-3";
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5>${c.productName}</h5>
+                                <p class="text-muted mb-1">Price: ₹${c.price} × ${c.quantity}</p>
+                                <p class="text-muted mb-0">Total: ₹${itemTotal.toFixed(2)}</p>
+                            </div>
+                            <button onclick="removeItem(${c.cartId})" class="btn btn-delete">Remove</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
 
-          totalItems += c.quantity;
-          totalAmount += itemTotal;
+                document.getElementById("totalItems").innerText = totalItems;
+                document.getElementById("totalAmount").innerText = totalAmount.toFixed(2);
+            })
+            .catch(err => {
+                console.error("Error loading cart:", err);
+                alert("Unable to load cart items.");
+            });
+    }
 
-          let div = document.createElement("div");
+    function removeItem(cartId) {
+        fetch(`/api/cart/${cartId}`, {
+            method: "DELETE"
+        })
+            .then(() => loadCart())
+            .catch(err => {
+                console.error("Cart remove error:", err);
+                alert("Failed to remove item.");
+            });
+    }
 
-          div.innerHTML = `
-              <div class="card">
-                  <h4>${c.productName}</h4>
-                  <p>Price: ₹${c.price}</p>
-                  <p>Quantity: ${c.quantity}</p>
-                  <p><b>Total: ₹${itemTotal}</b></p>
+    function goPayment() {
+        const totalAmount = parseFloat(document.getElementById("totalAmount").innerText || 0);
+        if (totalAmount <= 0) {
+            alert("Your cart is empty. Add products before checkout.");
+            return;
+        }
+        window.location.href = "payment.html";
+    }
 
-                  <button onclick="removeItem(${c.cartId})" class="btn btn-danger">Remove</button>
-              </div>
-          `;
+    function goHome() {
+        window.location.href = "index.html";
+    }
 
-          container.appendChild(div);
-      });
-
-      document.getElementById("totalItems").innerText = totalItems;
-      document.getElementById("totalAmount").innerText = totalAmount;
-  });
-
-  // ✅ DELETE ITEM
-  function removeItem(cartId){
-      fetch(`http://localhost:9090/api/cart/${cartId}`, {
-          method: "DELETE"
-      })
-      .then(() => location.reload());
-  }
-
-  // ✅ CHECKOUT
-  function goPayment(){
-      const totalAmount = parseFloat(document.getElementById("totalAmount").innerText || 0);
-      if (totalAmount <= 0) {
-          alert("Your cart is empty. Add products before checkout.");
-          return;
-      }
-      window.location.href = "payment.html";
-  }
-
-  function goHome(){
-      window.location.href = "index.html";
-  }
-
+    loadCart();
 </script>
 
 </body>
