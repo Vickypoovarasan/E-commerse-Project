@@ -1,0 +1,304 @@
+Production‑Ready Project Prompt and Complete Project Flow
+Men’s Dress Shop — Local E‑Commerce & Dispatch System (Implementation Blueprint)
+Format: Plain text (suitable for saving as .txt). No code included — full, precise project flow, API contracts, data changes, UI transitions, security rules, and acceptance criteria.
+
+===============================================================================
+PROJECT SUMMARY
+===============================================================================
+Objective
+Build a production‑grade, secure, multi‑page Men’s Dress Shop e‑commerce and order management platform for local development (http://localhost:8080) and production. Deliverables are a complete project specification and implementation blueprint (no code): frontend MPA flows, backend API contracts, database state changes, security and token lifecycle, transactional order and inventory rules, admin workflows, observability, CI gates, and acceptance tests.
+
+Primary constraints
+- Backend: Spring Boot 3.2.x, Java 17, Maven (modular: config, entity, repository, service, controller, dto, exception).
+- Database: MySQL 8.x (UTC timezone). Use DECIMAL(10,2) for money, INT/BIGINT for quantities, audit columns, and optimistic locking `version` columns.
+- Frontend: Multi‑Page Architecture (MPA) — seven distinct HTML pages, Tailwind CSS, vanilla JS fetch(), no frameworks.
+- Security: BCrypt password hashing; JWT access tokens (15‑minute TTL) in volatile memory/sessionStorage; HttpOnly Secure SameSite refresh cookies with rotation; CSRF double‑submit cookie; strict CORS origin whitelist.
+- No placeholder logic; all flows fully specified and testable.
+
+===============================================================================
+FILE & PAGE MATRIX (deliverable pages)
+===============================================================================
+1. index.html
+   - Landing page and filterable product catalog.
+   - Category filters, search, product cards, cart badge, user status indicator.
+
+2. auth.html
+   - Unified Login, Registration, OTP verification UI.
+   - Registration form, OTP input card, login card, forgot/reset password flows.
+
+3. product-details.html
+   - Product images, description, size grid (S, M, L, XL, XXL), color swatches, reviews, Add to Cart and Buy Now.
+
+4. cart.html
+   - Persistent cart (localStorage), quantity +/- controls, subtotal, tax (12%), shipping, grand total, Buy All button.
+
+5. checkout.html
+   - Address autofill from profile, payment options (COD, simulated Razorpay), order summary, place order button (Idempotency-Key required).
+
+6. orders.html
+   - Customer order history, 4‑step progress stepper, cancel and return actions with eligibility logic.
+
+7. admin-dashboard.html
+   - Admin metrics, master dispatch feed, status advance toggles, return approvals, user directory.
+
+Shared assets
+- assets/styles.css (Tailwind + custom tokens/animations)
+- assets/app.js (global fetch wrapper, token refresh queue, toasts)
+- assets/api.js (API wrappers, idempotency header handling)
+- assets/store.js (cart and session state)
+- page-specific JS modules and shared components (header, footer, toasts)
+
+===============================================================================
+END‑TO‑END CUSTOMER LIFECYCLE FLOW (local dev: http://localhost:8080)
+===============================================================================
+1. Registration (auth.html)
+   - User fills: username, email, password, phone, address (street, city, state, country), date_of_birth.
+   - Client: POST /api/auth/register with payload.
+   - Server actions:
+     - Validate inputs.
+     - Hash password with BCrypt.
+     - Create user record with is_verified = FALSE.
+     - Generate 6‑digit OTP; compute HMAC‑SHA256(OTP + server_pepper) and store as otp_code_hash; set otp_expiry = now + 5 minutes.
+     - Enforce rate limits: max 3 OTP sends/hour per user/IP; 60s resend cooldown.
+     - Return JSON: success and, in dev profile only, debug_otp for sandbox testing.
+   - Client: show OTP input card (if debug_otp present display sandbox card).
+
+2. OTP Verification (auth.html)
+   - Client: POST /api/auth/verify-otp { email, otp }.
+   - Server:
+     - Lookup user; verify otp_expiry not passed.
+     - Compare HMAC hash using constant‑time comparison.
+     - If valid: set is_verified = TRUE; clear otp fields.
+     - If invalid: increment attempt counter; if attempts > 5 invalidate OTP and require new request.
+   - Client: on success redirect to login card.
+
+3. Login (auth.html)
+   - Client: POST /api/auth/login { email, password }.
+   - Server:
+     - Verify BCrypt password.
+     - Reject if is_verified = FALSE.
+     - Issue short‑lived JWT access token (15m) in response body.
+     - Set HttpOnly Secure SameSite refresh cookie (refresh token) with rotation semantics.
+   - Client:
+     - Store access token in volatile memory or sessionStorage (not localStorage).
+     - Update UI and redirect to index.html.
+
+4. Browsing and Product Selection (index.html → product-details.html)
+   - index.html lists products with category filters and pagination.
+   - Click product card → product-details.html?id={id}.
+   - product-details.html fetches product details and reviews via GET /api/products/{id}.
+   - User selects size and color.
+
+5. Add to Cart / Buy Now
+   - Add to Cart:
+     - Client appends variant object to localStorage cart array: { productId, size, color, quantity, priceAtView }.
+     - Update cart badge.
+   - Buy Now:
+     - Client stores single item in temporary key (e.g., buyNowItem) and navigates to checkout.html.
+
+6. Cart Management (cart.html)
+   - Read cart from localStorage.
+   - Quantity +/- updates recalc subtotal, tax (12%), shipping ($15 or free if subtotal > $150), grand total.
+   - Click "Buy All" → transfer cart array to checkout payload and navigate to checkout.html.
+
+7. Checkout (checkout.html)
+   - Pre-fill shipping/billing from GET /api/users/me.
+   - Payment options:
+     - COD: set payment_method = COD; payment_status = PENDING_PAY.
+     - Razorpay simulation: client calls POST /api/payments/create-payment-intent (Idempotency-Key required) to get simulated payment_id; simulate card modal; on success set payment_status = PAID.
+   - Place order:
+     - Client generates unique Idempotency-Key header and POST /api/orders/checkout with order payload and header.
+
+8. Server Checkout Transaction (OrderService)
+   - Validate Idempotency-Key against idempotent_requests table (SHA‑256 hash).
+   - Begin @Transactional(isolation = REPEATABLE_READ).
+   - For each order item:
+     - Load product row with optimistic locking (version).
+     - Re‑verify stock >= requested quantity.
+   - If optimistic lock failure occurs:
+     - Retry up to 3 times with exponential backoff (100ms, 200ms, 400ms).
+     - If still failing return HTTP 409 CONFLICT_STOCK.
+   - Deduct stock quantities, create orders and order_items, compute expected_delivery_date = order_date + 4 days.
+   - Persist idempotency response in idempotent_requests.
+   - Commit transaction.
+   - Return order confirmation to client and redirect to orders.html.
+
+9. Orders and Tracking (orders.html)
+   - Client GET /api/orders/user/{id}?page=&size= to fetch orders.
+   - Render 4‑step stepper based on order.status:
+     - ORDER_RECEIVED → DISPATCHED → OUT_FOR_DELIVERY → DELIVERED.
+   - Display expected_delivery_date and payment_status badges.
+   - Cancellation rule:
+     - If status in {ORDER_RECEIVED, DISPATCHED} and now - order_date <= 3 days, show "Cancel Order".
+     - Client POST /api/orders/{id}/cancel.
+     - Server validates time window, sets status = CANCELLED, restores stock, and if payment_method = RAZORPAY and payment_status = PAID, create refund and set payment_status = REFUNDED; if COD set payment_status = CANCELLED.
+   - Return rule:
+     - If status = DELIVERED and now - actual_delivery_date <= 1 day, show "Return Damaged Dress".
+     - Client POST /api/orders/{id}/return.
+     - Server validates and sets status = RETURN_REQUESTED.
+
+===============================================================================
+ADMIN / SHOP OWNER FLOW
+===============================================================================
+1. Admin access (admin-dashboard.html)
+   - Frontend route gated by role check; backend endpoints protected by Spring Security ADMIN role.
+   - Admin logs in and receives access token with ADMIN role claim.
+
+2. Master Dispatch Feed
+   - GET /api/admin/orders?page=&size= returns paginated master feed with recipient name, phone, address, items, quantities, price, order status, payment_status, expected/actual delivery dates.
+   - Admin UI shows interactive toggles:
+     - Dispatch Order → PUT /api/admin/orders/{id}/status advances ORDER_RECEIVED → DISPATCHED.
+     - Set Out for Delivery → advances to OUT_FOR_DELIVERY.
+     - Complete Delivery → advances to DELIVERED; server stamps actual_delivery_date = now; if payment_method = COD set payment_status = COD_COLLECTED.
+
+3. Return Approvals
+   - Admin sees list of RETURN_REQUESTED orders.
+   - Clicking "Approve Return & Process Refund" → PUT /api/admin/orders/{id}/approve-return.
+   - Server:
+     - Validates state = RETURN_REQUESTED.
+     - Sets status = RETURNED.
+     - Restores stock quantities.
+     - If payment_method = RAZORPAY and payment_status = PAID or PENDING, create refund, set payment_status = REFUNDED, store refund_id.
+
+4. Admin Users Directory
+   - GET /api/admin/users?page=&size= returns user list with contact and address details.
+
+===============================================================================
+SECURITY, TOKEN LIFECYCLE, CSRF, CORS, AND RATE LIMITS
+===============================================================================
+Token lifecycle
+- Access token: 15‑minute TTL; stored in volatile memory/sessionStorage; included in Authorization: Bearer <token> header.
+- Refresh token: HttpOnly Secure SameSite cookie; rotated on refresh; refresh endpoint POST /api/auth/refresh issues new access token and rotates refresh cookie.
+
+Silent refresh client behavior
+- Global fetch wrapper intercepts 401 responses indicating expired access token.
+- Queue failed requests; if not already refreshing, call POST /api/auth/refresh.
+- On success update access token and retry queued requests; on failure redirect to auth.html.
+
+CSRF protection
+- Backend issues cookie `XSRF-TOKEN` (Secure; SameSite=Strict).
+- Client reads cookie and attaches header `X-XSRF-TOKEN` for all state‑changing requests.
+
+CORS
+- Server CORS config allows Authorization, Content-Type, Idempotency-Key, X-XSRF-TOKEN headers and validates origin against production whitelist.
+
+Rate limiting and abuse controls
+- OTP: max 3 sends/hour per user/IP; 60s resend cooldown; max 5 verify attempts per OTP.
+- API rate limiting at gateway for general endpoints; monitor and alert on abuse.
+
+===============================================================================
+DATABASE & SCHEMA CONVENTIONS (summary)
+===============================================================================
+- Money: DECIMAL(10,2).
+- Quantities: INT/BIGINT.
+- Timestamps: UTC; API ISO‑8601 UTC format.
+- Audit columns: created_at, updated_at on users, products, orders, order_items.
+- Optimistic locking: version INT on products and orders.
+- Idempotency table: idempotent_requests(key_hash CHAR(64), response_payload VARCHAR(10000), created_at TIMESTAMP).
+- Canonical enums (exact strings):
+  - order_status: ORDER_RECEIVED, DISPATCHED, OUT_FOR_DELIVERY, DELIVERED, CANCELLED, RETURN_REQUESTED, RETURNED.
+  - payment_status: PENDING_PAY, PAID, COD_COLLECTED, REFUNDED, FAILED, CANCELLED.
+  - payment_method: RAZORPAY, COD.
+- Indexes: users.email (unique), users.username (unique), orders.user_id, orders.status, products.category_id, order_items.order_id.
+
+===============================================================================
+API CONTRACTS (high‑level)
+===============================================================================
+Auth
+- POST /api/auth/register
+- POST /api/auth/verify-otp
+- POST /api/auth/login
+- POST /api/auth/refresh
+- POST /api/auth/forgot-password
+- POST /api/auth/reset-password
+
+Products
+- GET /api/products?page=&size=&category=
+- GET /api/products/{id}
+- POST /api/products (ADMIN)
+- POST /api/products/{id}/reviews (AUTH)
+
+Orders & Payments
+- POST /api/orders/checkout (Idempotency-Key required)
+- GET /api/orders/user/{id}?page=&size=
+- POST /api/orders/{id}/cancel
+- POST /api/orders/{id}/return
+- POST /api/payments/create-payment-intent (Idempotency-Key required)
+
+Admin
+- GET /api/admin/orders?page=&size=
+- PUT /api/admin/orders/{id}/status
+- PUT /api/admin/orders/{id}/approve-return
+- GET /api/admin/users?page=&size=
+
+Pagination rules
+- page >= 0; 1 <= size <= 100; default size = 25. Violations return HTTP 400 with code INVALID_PAGINATION.
+
+Error schema (standard)
+- All errors return JSON:
+  - timestamp (ISO‑8601 UTC)
+  - code (string)
+  - message (string)
+  - correlationId (string)
+  - details (array of strings)
+
+===============================================================================
+TRANSACTIONAL & CONCURRENCY RULES
+===============================================================================
+- Checkout and stock updates run in a single transaction with REPEATABLE_READ isolation.
+- Default optimistic locking via `version` column; on optimistic lock failure retry up to 3 times (100ms, 200ms, 400ms).
+- If retries fail return HTTP 409 with code CONFLICT_STOCK.
+- For high contention use pessimistic write locks (SELECT ... FOR UPDATE).
+- All stock restores (cancellations, approved returns) are transactional and idempotent.
+
+===============================================================================
+TESTING, CI, AND ACCEPTANCE CRITERIA
+===============================================================================
+Unit tests
+- UserService: registration, OTP generation/hash/expiry, verify attempts, resend cooldown.
+- AuthController: login, refresh, token rotation.
+- OrderService: checkout transaction, idempotency, optimistic lock retry, cancel/return flows.
+
+Integration tests
+- End‑to‑end scenario: register → verify OTP → login → add to cart → checkout (Razorpay simulated) → admin advance to DELIVERED → customer request return → admin approve return → verify stock and payment_status.
+
+Load/concurrency tests
+- Simulate concurrent checkouts for same SKU to validate optimistic locking and fallback behavior.
+
+CI gates
+- Linting, unit tests, integration tests, DB migrations.
+- Security gate: DebugOtpGuardTest fails build if debug_otp enabled in non‑dev profile.
+- Migration check: Flyway/Liquibase migrations applied in CI.
+
+Acceptance criteria (must pass)
+- Registration returns OTP in dev only; login blocked until verified.
+- Checkout is idempotent and transactional; stock never goes negative.
+- Cancel within 3 days restores stock and triggers refunds correctly.
+- Return requests only allowed within 1 day of actual delivery and processed by admin.
+- Admin status transitions stamp actual_delivery_date and update COD_COLLECTED when applicable.
+- All APIs return standardized error schema and propagate correlation IDs.
+
+===============================================================================
+OBSERVABILITY, LOGGING, AND DEPLOYMENT CHECKLIST
+===============================================================================
+Observability
+- Structured JSON logs; include correlationId (X-Correlation-ID).
+- Metrics: checkout success/failure rate, inventory anomalies, OTP abuse.
+- Alerts: checkout failure rate > 5% over 15 minutes; negative stock attempts > 10/min; OTP abuse > 10 failed attempts/IP/hour.
+
+Deployment checklist
+- Secrets via environment variables; no hardcoded secrets.
+- TLS termination configured.
+- CORS origin whitelist configured for production domains.
+- API gateway rate limiting enabled.
+- Flyway/Liquibase migrations included and run during deployment.
+- Health checks and readiness probes configured.
+
+===============================================================================
+PROMPT FOR IMPLEMENTERS / AI AGENT (copy‑paste ready)
+===============================================================================
+You are a Senior Principal Software Architect and Lead Full‑Stack Engineer. Build a production‑grade, secure, multi‑page Men’s Dress Shop e‑commerce and order management platform per the specification below. Deliverables: complete `schema.sql` (MySQL 8.x, UTC), compile‑ready Spring Boot 3.2.x backend (Java 17, Maven) with modules: config, entity, repository, service, controller, dto, exception; seven distinct frontend HTML pages (index.html, auth.html, product-details.html, cart.html, checkout.html, orders.html, admin-dashboard.html) using Tailwind CSS and vanilla JS; OpenAPI 3.0 `openapi.yaml`; Flyway/Liquibase migrations; unit and integration tests; CI gates including a test that blocks debug OTP in non‑dev. Implement security: BCrypt passwords, JWT access tokens (15m) stored in volatile memory/sessionStorage, HttpOnly Secure SameSite refresh cookies with rotation, CSRF double‑submit cookie `XSRF-TOKEN` and header `X-XSRF-TOKEN`, strict CORS. Implement transactional checkout with idempotency (Idempotency-Key header persisted as SHA‑256 in idempotent_requests), optimistic locking with retry (100/200/400ms), fallback to pessimistic locks for hotspots, and refund idempotency. Ensure accessibility (WCAG), responsive design, and observability (structured logs, correlation IDs, Prometheus metrics, alerts). No placeholder logic; all flows must be fully implemented and tested. Use the project flow and rules in the attached blueprint as the authoritative contract.
+
+===============================================================================
+END OF DOCUMENT
+===============================================================================
