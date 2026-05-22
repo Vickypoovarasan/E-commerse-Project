@@ -1,0 +1,116 @@
+Men's Dress Shop Local E-Commerce Flow Blueprint
+
+This blueprint outlines the exact screen transitions, data transfers, and database changes that occur while testing locally on your machine (http://localhost:8080).
+
+================================================================================
+
+CUSTOMER LIFECYCLE FLOW
+================================================================================
+
+[ Registration Screen on auth.html ]
+│
+├─► Customer fills: Username, Email, Password, Phone, Address, DOB.
+│
+▼ (Vanilla JS fetch POST /api/auth/register)
+[ Spring Boot Core (Tomcat) ]
+│
+├─► BCrypt hashes the password string.
+├─► Sets user verification status is_verified = FALSE.
+├─► Generates 6-Digit random OTP, hashes it using HMAC-SHA256, sets 5-minute expiry.
+│
+▼ (Returns JSON payload containing "debug_otp" in local 'dev' profile)
+[ OTP Input Card on auth.html ]
+│
+├─► Webpage intercepts "debug_otp" and displays it in a clean sandbox testing card.
+├─► User inputs the 6-digit OTP code.
+│
+▼ (Vanilla JS fetch POST /api/auth/verify-otp)
+[ Spring Boot Validation Service ]
+│
+├─► Uses constant-time comparison to verify hashes and check expiration.
+├─► Marks is_verified = TRUE.
+│
+▼ (Redirects to Login Card on auth.html)
+[ Login Card on auth.html ]
+│
+├─► User logs in. Server returns JWT Access Token (15-min TTL) and sets HttpOnly Refresh Cookie.
+│
+▼ (Redirects to index.html)
+[ Storefront on index.html ]
+│
+├─► Customer browses premium menswear suits and formal shirts.
+├─► Dynamic navbar reads sessionStorage to show user's active session.
+│
+▼ (Clicks on a suit card -> navigates to product-details.html?id=1)
+[ Product Details on product-details.html ]
+│
+├─► Displays descriptions, star review metrics, and active review threads.
+├─► Customer selects Size (S, M, L, XL, XXL) and Color Swatch.
+│
+├──► Option A: Click "Add to Cart" ──► Appends variant parameters to Cart Array in localStorage.
+│                                     Redirects to index.html to keep shopping.
+│
+└──► Option B: Click "Buy Now" ─────► Automatically bypasses cart, caches single variant parameters
+and redirects instantly to checkout.html.
+│
+▼ (For Option A: Navigates to cart.html)
+[ Tailoring Cart on cart.html ]
+│
+├─► Displays all saved items. Interactive "+" / "-" buttons adjust quantities.
+├─► JavaScript instantly recalculates subtotal, 12% sales tax, and flat $15.00 shipping
+│   (Auto-sets shipping to $0.00 / FREE on subtotals over $150.00).
+├─► Click "Buy All" ──► Transfers cart selection array to checkout.html.
+│
+▼ (Navigates to checkout.html)
+[ Checkout Arena on checkout.html ]
+│
+├─► Shipping and billing address fields pre-fill from user profile fetched from DB.
+├─► Payment Option 1: Cash on Delivery (COD).
+├─► Payment Option 2: Secure Online Gateway (Simulated Razorpay credit card modal).
+│
+▼ (Clicks "Finalize Payment & Place Order")
+POST /api/orders/checkout (Requires client-generated unique Idempotency-Key header)
+│
+▼ [ Spring Boot Order Service Transaction (@Transactional repeatable read) ]
+├─► Validates Idempotency-Key table to prevent duplicate transaction requests.
+├─► Acquires optimistic locks on products (@Version version column in products table).
+├─► If concurrency lock fails, executes a retry loop (100ms, 200ms, 400ms exponential delays).
+├─► Verifies stock levels. If stock falls below 0, rollback and return CONFLICT_STOCK.
+├─► Deducts stock, writes Order and OrderItem records, and calculates delivery date
+│   (order_date + 4 days).
+└─► Saves response in idempotency database. Redirects client to orders.html.
+│
+▼ (Navigates to orders.html)
+[ Customer Order History on orders.html ]
+│
+├─► Shows a progressive 4-step linear tracking stepper timeline:
+│   Order Received (Step 1) ──► Dispatched (Step 2) ──► Out for Delivery (Step 3) ──► Delivered (Step 4)
+├─► Displays calculated expected delivery date and dynamic paid/unpaid status badges.
+│
+├──► Rule 1 (Cancellation): If order status is RECEIVED/DISPATCHED and t_current - t_order <= 3 days,
+│    renders "Cancel Order" button. Restores stock, triggers refund state if paid via Razorpay.
+│
+└──► Rule 2 (Damaged Return): If status is DELIVERED and t_current - t_delivery <= 1 day,
+renders "Return Damaged Dress" button. Updates status to RETURN_REQUESTED.
+
+================================================================================
+2. ADMIN / SHOP OWNER OPERATIONS FLOW
+
+[ Admin Dashboard on admin-dashboard.html ]
+│
+├─► Gated by ADMIN role on both frontend routing and Spring Security API filters.
+├─► Visual dashboard displaying live gross shop revenue, active shipments, and user metrics.
+│
+├──► Panel A: Real-time Master Dispatch Feed Table
+│             Displays a master view of every customer's name, phone, address, and purchased items.
+│             Provides interactive dynamic dispatcher status advance toggle buttons.
+│
+│             - Clicking "Dispatch Order" advances status to DISPATCHED.
+│             - Clicking "Out for Delivery" advances status to OUT_FOR_DELIVERY.
+│             - Clicking "Complete Delivery" updates status to DELIVERED, stamps database with
+│               actual_delivery_date, and automatically maps COD orders to COD_COLLECTED.
+│
+└──► Panel B: Return Requests & Refund Approvals Module
+Lists incoming return requests for damaged items.
+Clicking "Approve Return & Process Refund" updates order to RETURNED, automatically
+restores stock, and runs refund calculations back to the payment ledger.
